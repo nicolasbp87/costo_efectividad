@@ -62,3 +62,18 @@ resultado_mejor_por_lambda <- resultado_nmb %>%
   ungroup()
 
 resultado_mejor_por_lambda
+
+# Comentario interpretativo (para informe):
+#
+# Con una disposición a pagar de 500.000 CLP por QALY,
+# el tratamiento estándar A presenta un NMB mayor (4,0 millones)
+# que la nueva intervención B (3,95 millones), por lo que A
+# es la estrategia óptima en este umbral.
+#
+# En cambio, con una disposición a pagar de 1.000.000 CLP por QALY,
+# la nueva intervención B presenta un NMB mayor (9,1 millones)
+# que A (9,0 millones), por lo que B pasa a ser la estrategia óptima.
+#
+# Esto es consistente con el ICER de B vs A (~666.667 CLP/QALY):
+# para λ < 666.667 es mejor A; para λ > 666.667 es mejor B.
+
