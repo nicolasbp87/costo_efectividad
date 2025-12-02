@@ -96,6 +96,7 @@ n_states_tunnels  <- length(v_n_tunnels)                   # Number of states
 v_p_HD <- seq(0.003, 0.01, length.out = n_t)  # Probability to die when sick (age-dependent)
 p_HS <- 0.20                                  # Probability to become sick when healthy
 
+plot(v_p_SD_tunnels)
 #* Weibull parameters for state-residence-dependent transition probability of 
 #* dying when Sick
 r_SD_scale <- 0.08 # scale
@@ -120,10 +121,10 @@ v_costs     <- c(c_H, c_S, c_D)             # All costs
 v_utilities <- c(u_H, u_S, u_D)             # All utilities
 
 # Calculate discount weights for costs for each cycle based on discount rate d_c
-v_dwc <- 1 / (1 + d_e) ^ (0:n_t) 
+v_dwc <- 1 / (1 + d_c) ^ (0:n_t) 
 
 # Calculate discount weights for effectiveness for each cycle based on discount rate d_e
-v_dwe <- 1 / (1 + d_c) ^ (0:n_t) 
+v_dwe <- 1 / (1 + d_e) ^ (0:n_t) 
 
 #******************************************************************************
 #### 04 Define and initialize matrices and vectors ####
@@ -146,7 +147,7 @@ m_M[1, ] <- c(1, rep(0, n_tunnel_size), 0)
 #### 04.2 Transition probability array ####
 #******************************************************************************
 
-# Create the transition probability array
+# Create the transition probability array - estados x estados x ciclos
 a_P <- array(0,
              dim      = c(n_states_tunnels, n_states_tunnels, n_t),               
              dimnames = list(v_n_tunnels, v_n_tunnels, 0:(n_t - 1)))  
@@ -154,7 +155,7 @@ a_P <- array(0,
 # Fill in the transition probability array:
 # From Healthy
 a_P["Healthy", "Healthy", ]  <- 1 - v_p_HD - p_HS
-a_P["Healthy", "Sick_1Yr", ] <- p_HS
+a_P["Healthy", "Sick_1Yr", ] <- p_HS # first year
 a_P["Healthy", "Dead", ]     <- v_p_HD
 
 # From Sick
@@ -164,11 +165,11 @@ for (i in 1:(n_tunnel_size - 1)) { #i=1
   a_P[v_sick_tunnels[i], "Dead", ] <- v_p_SD_tunnels[i]
 }
 
-# From Sick_60Yr to Sick Sick_60Yr
+# From Sick_75Yr to Sick Sick_75Yr
 a_P[v_sick_tunnels[n_tunnel_size], 
     v_sick_tunnels[n_tunnel_size], ] <- 1 - v_p_SD_tunnels[n_tunnel_size]
 
-# From Sick_60Yr to Death
+# From Sick_75Yr to Death
 a_P[v_sick_tunnels[n_tunnel_size], "Dead", ] <- v_p_SD_tunnels[n_tunnel_size]
 
 # From Dead
@@ -209,7 +210,7 @@ m_M_tunnels <- cbind(Healthy = m_M[, "Healthy"],
 # Show the first rows of the aggregated Markov trace
 head(m_M_tunnels)
 
-# rowSums(m_M_tunnels)
+rowSums(m_M_tunnels)
 
 #******************************************************************************
 #### 06 Compute and Plot Epidemiological Outcomes ####
