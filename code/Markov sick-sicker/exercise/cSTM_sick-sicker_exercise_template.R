@@ -1,3 +1,4 @@
+devtools::install_version("RTools", version = "4.3", repos='http://cran.us.r-project.com')
 # *****************************************************************************
 #
 # Script: cSTM_sick-sicker_exercise_template.R
@@ -286,7 +287,7 @@ plotmat(t(m_P_diag), t(layout.fig), self.cex = 0.5, curve = 0, arr.pos = 0.7,
 
 ### 06.01 Initial state vector  ------------------------------------------------
 # All starting healthy
-v_m_init <- c(Healthy = 1, Sick = 0, Sicker = 0, Dead = 0) # initial state vector
+v_m_init <- c(H = 1, S1 = 0, S2 = 0, D = 0) # initial state vector
 v_m_init
 
 # ******************************************************************************
@@ -295,12 +296,31 @@ v_m_init
 
 ### 07.01 Initialize cohort trace for SoC  -------------------------------------
 
-# your turn
+# your turn:
+# Create the cohort trace
+m_M <- matrix(NA, # nulos that help debug: if there are any NA remaining it's 
+              # because there is some issue in the calculation or code
+              # Create Markov trace (n_t + 1 because R doesn't understand Cycle 0)
+              nrow = n_cycles + 1,
+              ncol = n_states, 
+              dimnames = list(0:n_cycles, v_names_states))
+
+# Initialize first cycle of Markov trace: initial state - all healthy
+m_M[1, ] <- v_m_init
 
 ### 07.02 Initialize cohort trace for strategy AB  -----------------------------
 # Structure and initial states are the same as for SoC
+# Create the cohort trace
+m_M_AB <- matrix(NA, # nulos that help debug: if there are any NA remaining it's 
+              # because there is some issue in the calculation or code
+              # Create Markov trace (n_t + 1 because R doesn't understand Cycle 0)
+              nrow = n_cycles + 1,
+              ncol = n_states, 
+              dimnames = list(0:n_cycles, v_names_states))
 
-# your turn
+# Initialize first cycle of Markov trace: initial state - all healthy
+m_M_AB[1, ] <- v_m_init
+
 
 # ******************************************************************************
 # 08 YOUR TURN: Create transition probability matrices  -----------------------
@@ -311,38 +331,88 @@ v_m_init
 # All transitions to a non-death state are assumed to be conditional on survival 
 
 # your turn
+#Fill in the transition probability matrix:
 
+m_P_diag <- matrix(0, nrow = n_states, ncol = n_states, 
+                   dimnames = list(v_names_states, v_names_states))
 ### 08.02 Fill in matrix  ------------------------------------------------------
 # From H
-
+# From Healthy
+m_P_diag["H", "H"] <- (1 - p_HD)*(1- p_HS1)
+m_P_diag["H", "S1"]    <- (1 - p_HD)*p_HS1
+m_P_diag["H", "D"]    <- p_HD
 # your turn
 
 # From S1
-
+# From Sick (S1)
+m_P_diag["S1", "H"] <- (1- p_S1D)*p_S1H
+m_P_diag["S1", "S2"] <- (1- p_S1D)*p_S1S2
+m_P_diag["S1", "D"] <- p_S1D
+m_P_diag["S1", "S1"] <- (1- p_S1D)*(1 - p_S1H - p_S1S2)
 # your turn
 
 # From S2
 
+# From Sicker (S2)
+m_P_diag["S2", "D"] <- p_S2D
+m_P_diag["S2", "S2"] <- 1- p_S2D
 # your turn
 
 # From D
 
 # your turn
+# From Dead
+m_P_diag["D", "D"] <- 1
+
+# Check rows add up to 1
+rowSums(m_P_diag)
+
+# Show final Transition Matrix
+m_P_diag
 
 ### 08.03 Initialize transition probability matrix for strategy AB  ------------
 
 # your turn
+m_P_diag_AB <- matrix(0, nrow = n_states, ncol = n_states, 
+                 dimnames = list(v_names_states, v_names_states))
 
 ### 08.04 Update only transition probabilities from S1 involving p_S1S2  -------
 
 # your turn
+# From H
+# From Healthy
+m_P_diag_AB["H", "H"] <- 1 - p_HD - p_HS1
+m_P_diag_AB["H", "S1"]    <- p_HS1
+m_P_diag_AB["H", "D"]    <- p_HD
+# your turn
+
+# From S1
+# From Sick (S1)
+m_P_diag_AB["S1", "H"] <- p_S1H
+m_P_diag_AB["S1", "S2"] <- p_S1S2_trtAB
+m_P_diag_AB["S1", "D"] <- p_S1D
+m_P_diag_AB["S1", "S1"] <- 1- p_S1D - p_S1H - p_S1S2_trtAB
+# your turn
+
+# From S2
+
+# From Sicker (S2)
+m_P_diag_AB["S2", "D"] <- p_S2D
+m_P_diag_AB["S2", "S2"] <- 1- p_S2D
+# your turn
+
+# From D
+
+# your turn
+# From Dead
+m_P_diag_AB["D", "D"] <- 1
 
 ### 08.05 Check if transition probability matrices are valid  ------------------
 ### Check that transition probabilities are [0, 1] 
 
-# your turn
-
 ### Check that all rows sum to 1 
+# your turn
+rowSums(m_P_diag_AB)
 
 # your turn
 
@@ -353,10 +423,20 @@ v_m_init
 ### 09.01 Iterative solution of time-independent cSTM  -------------------------
 
 # your turn
+for (t in 1:n_cycles) {
+  # Estimate the state vector for the next cycle (t + 1)
+  m_M[t + 1, ] <- m_M[t, ] %*% m_P_diag
+}
+
+for (t in 1:n_cycles) {
+  # Estimate the state vector for the next cycle (t + 1)
+  m_M_AB[t + 1, ] <- m_M_AB[t, ] %*% m_P_diag_AB
+}
 
 ### 09.02 Store the cohort traces in a list  -----------------------------------
 
 # your turn
+
 
 # ******************************************************************************
 # 10 YOUR TURN: Plot Outputs  --------------------------------------------------
@@ -365,9 +445,48 @@ v_m_init
 ### 10.01 Plot the cohort trace for strategies SoC and AB  ---------------------
 
 # your turn
+# Create a plot of the data (matrix plotting function: plots each column)
+matplot(x    = c(0:n_cycles),
+        y    = m_M, 
+        type = 'l',
+        ylab = "Probability of state occupancy",
+        xlab = "Cycle",
+        main = "Cohort Trace", 
+        lwd  = 4)
 
 # ADD A DESCRIPTION OF WHAT YOU SEE AND IF THAT MAKES SENSE TO YOU 
+# Add a legend to the graph
+legend("right",                                 
+       legend = v_names_states, 
+       col    = c("black", "red", "green", 'blue'), 
+       lty    = 1:4, 
+       bty    = "n")                            
+# Plot a vertical line that helps identifying at which cycle the prevalence of 
+# sick is highest.  
+abline(v = which.max(m_M[, "S1"]) - 1, 
+       col = "gray") 
 
+
+# Create a plot of the data (matrix plotting function: plots each column)
+matplot(x    = c(0:n_cycles),
+        y    = m_M_AB, 
+        type = 'l',
+        ylab = "Probability of state occupancy",
+        xlab = "Cycle",
+        main = "Cohort Trace AB Strategy", 
+        lwd  = 4)
+
+# ADD A DESCRIPTION OF WHAT YOU SEE AND IF THAT MAKES SENSE TO YOU 
+# Add a legend to the graph
+legend("right",                                 
+       legend = v_names_states, 
+       col    = c("black", "red", "green", 'blue'), 
+       lty    = 1:4, 
+       bty    = "n")                            
+# Plot a vertical line that helps identifying at which cycle the prevalence of 
+# sick is highest.  
+abline(v = which.max(m_M_AB[, "S1"]) - 1, 
+       col = "gray") 
 # ******************************************************************************
 # 11 YOUR TURN: State Rewards  -------------------------------------------------
 # ******************************************************************************
