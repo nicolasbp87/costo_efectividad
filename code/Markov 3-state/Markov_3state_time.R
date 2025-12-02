@@ -85,7 +85,7 @@ n_t        <- n_age_max - n_age_init # Number of cycles
 # *p_HD <- 0.05                                 # Probability to die when healthy
 # v_p_HD <- seq(0.003, 0.01, length.out = n_t)    # Probability to die when healthy
 ## Age-dependent mortality rates 
-lt_usa_2015 <- read.csv("data/HMD_USA_Mx_2015.csv")
+lt_usa_2015 <- read.csv("../../data/HMD_USA_Mx_2015.csv")
 # Extract age-specific all-cause mortality for ages in model time horizon
 v_r_mort_by_age <- lt_usa_2015 %>% 
   dplyr::filter(Age >= n_age_init & Age < n_age_max) %>%
@@ -107,10 +107,10 @@ v_costs     <- c(c_H, c_S, c_D)                # All costs
 v_utilities <- c(u_H, u_S, u_D)                # All utilities
 
 # Calculate discount weights for costs for each cycle based on discount rate d_c
-v_dwc <- 1 / (1 + d_e) ^ (0:n_t)
+v_dwc <- 1 / (1 + d_c) ^ (0:n_t)
 
 # Calculate discount weights for effectiveness for each cycle based on discount rate d_e
-v_dwe <- 1 / (1 + d_c) ^ (0:n_t)
+v_dwe <- 1 / (1 + d_e) ^ (0:n_t)
 
 ## Draw the state-transition cohort model
 m_P_diag <- matrix(0,
@@ -167,7 +167,7 @@ m_M[1, ] <- c(1, 0, 0)
 # # Probability matrix
 # m_P
 
-# Create 3-D array
+# Create 3-D array - 3d array that contains the time dependant probabilities
 a_P <- array(0,
              dim = c(n_states, n_states, n_t),
              dimnames = list(v_n, v_n, 0:(n_t - 1))) # Name the dimensions of the array
@@ -186,7 +186,7 @@ a_P["Sick", "Dead", ] <- p_SD
 a_P["Dead", "Dead", ] <- 1
 
 # Transition probability array
-a_P
+a_P[,,30]
 
 #******************************************************************************
 #### 04.3 Check if transition array and probabilities are valid ####
@@ -212,7 +212,8 @@ check_sum_of_transition_array(a_P = a_P,
 #   m_M[t + 1, ] <- m_M[t, ] %*% m_P
 # }
 
-# Loop through the number of cycles
+# Loop through the number of cycles - we now loop through each layer of the time-dependant
+# probability array
 for (t in 1:n_t) {
   # Estimate the state vector for the next cycle (t + 1)
   m_M[t + 1, ] <- m_M[t, ] %*% a_P[, , t]
