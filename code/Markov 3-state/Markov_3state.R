@@ -56,7 +56,7 @@ rm(list = ls())
 #******************************************************************************
 
 # Load packages from CRAN
-library("diagram") 
+library(diagram) 
 
 #******************************************************************************
 ##### 02 Load functions ####
@@ -93,14 +93,14 @@ u_H         <- 1                        # Utility when healthy
 u_S         <- 0.5                      # Utility when sick
 u_D         <- 0                        # Utility when dead
 d_e         <- d_c <- 0.03              # Equal discount of costs and QALYs by 3%
-v_costs     <- c(c_H, c_S, c_D)         # All costs
-v_utilities <- c(u_H, u_S, u_D)         # All utilities
+v_costs     <- c(c_H, c_S, c_D)         # All costs (vector)
+v_utilities <- c(u_H, u_S, u_D)         # All utilities (vector)
 
 # Calculate discount weights for costs for each cycle based on discount rate d_c
-v_dwc <- 1 / (1 + d_e) ^ (0:n_t) 
+v_dwc <- 1 / (1 + d_c) ^ (0:n_t) 
 
 # Calculate discount weights for effectiveness for each cycle based on discount rate d_e
-v_dwe <- 1 / (1 + d_c) ^ (0:n_t) 
+v_dwe <- 1 / (1 + d_e) ^ (0:n_t) 
 
 ## Draw the state-transition cohort model
 m_P_diag <- matrix(0, 
@@ -135,13 +135,14 @@ plotmat(A        = t(m_P_diag),
 #******************************************************************************
 
 # Create the cohort trace
-m_M <- matrix(NA, 
+m_M <- matrix(NA, # nulos that help debug: if there are any NA remaining it's 
+              # because there is some issue in the calculation or code
               # Create Markov trace (n_t + 1 because R doesn't understand Cycle 0)
               nrow = n_t + 1,
               ncol = n_states, 
               dimnames = list(0:n_t, v_n))
 
-# Initialize first cycle of Markov trace
+# Initialize first cycle of Markov trace: initial state - all healthy
 m_M[1, ] <- c(1, 0, 0)
 
 #******************************************************************************
@@ -149,7 +150,7 @@ m_M[1, ] <- c(1, 0, 0)
 #******************************************************************************
 
 # Create the transition probability matrix
-m_P  <- matrix(0,
+m_P  <- matrix(0, # inicialize with 0
                nrow     = n_states, 
                ncol     = n_states,
                dimnames = list(v_n, v_n)) # Name the columns and rows of the transition 
@@ -173,6 +174,9 @@ m_P["Dead", "Dead"] <- 1
 # Check rows add up to 1
 rowSums(m_P)
 
+# Show final Transition Matrix
+m_P
+
 #******************************************************************************
 #### 05 Run Markov model ####
 #******************************************************************************
@@ -190,7 +194,7 @@ for (t in 1:n_t) {
 #### 06.1 Cohort trace ####
 #******************************************************************************
 
-# Create a plot of the data
+# Create a plot of the data (matrix plotting function: plots each column)
 matplot(x    = c(0:n_t),
         y    = m_M, 
         type = 'l',
@@ -241,7 +245,7 @@ grid(nx  = n_t,
 
 # Summing probability of OS over time (i.e. life expectancy)
 v_le <- sum(v_os)           
-
+print(c('Life Expectancy:', str(v_le)))
 #******************************************************************************
 #### 06.3 Disease prevalence ####
 #******************************************************************************
@@ -279,17 +283,18 @@ v_tu <- m_M %*% v_utilities
 
 # Discount costs by multiplying the cost vector with discount weights (v_dw)
 n_tc_d <-  t(v_tc) %*% v_dwc
-#sum(v_tc * v_dwc)
+sum(v_tc * v_dwc)
 
 # Discount QALYS by multiplying the QALYs vector with discount weights (v_dw)
 n_te_d <-  t(v_tu) %*% v_dwe
-#sum(v_tu * v_dwe)
+sum(v_tu * v_dwe)
 
 #******************************************************************************
 #### 07.3 Results ####
 #******************************************************************************
 
-results <- data.frame( "Total Discounted Cost" = n_tc_d, 
+results <- data.frame( 'Strategy:'=v_names_str,
+                       "Total Discounted Cost" = n_tc_d, 
                        "Life Expectancy" = v_le, 
                        "Total Discounted QALYs" = n_te_d, 
                        check.names = F)
