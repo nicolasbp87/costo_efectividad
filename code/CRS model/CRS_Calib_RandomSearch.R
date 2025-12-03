@@ -225,8 +225,8 @@ pairs.panels(m_calib_res[1:100, v_param_names], line.col = "red")
 
 ### 07.04 Compare best and worst fit model outputs to targets  -----------------
 # Plot model-predicted output at best and worst set vs targets
-v_out_best  <- run_crs_markov(m_calib_res[1, ])
-v_out_worst <- run_crs_markov(m_calib_res[999, ])
+v_out_best  <- run_sick_sicker_markov(m_calib_res[1, ])
+v_out_worst <- run_sick_sicker_markov(m_calib_res[999, ])
 
 # TARGET 1: Survival ("Surv")
 plotrix::plotCI(x = lst_targets$Surv$time, y = lst_targets$Surv$value, 

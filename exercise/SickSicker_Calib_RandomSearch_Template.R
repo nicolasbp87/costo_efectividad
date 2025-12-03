@@ -102,6 +102,7 @@ plotrix::plotCI(x = lst_targets$PropSick$time, y = lst_targets$PropSick$value,
 # Function inputs: parameters to be estimated through calibration
 # Function outputs: model predictions corresponding to target data
 source("code/Functions/SickSicker_MarkovModel_Function.R") # creates the function run_sick_sicker_markov()
+source("code/Functions/CRS_MarkovModel_Function.R")
 
 ### 04.02 Test model function  -------------------------------------------------
 v_params_test <- c(p_S1S2 = 0.105, hr_S1 = 3, hr_S2 = 10)
@@ -152,7 +153,7 @@ for (i in 1:n_param) {
 colnames(m_param_samp) <- v_param_names
 
 ### 06.03 Visualize parameter samples  -----------------------------------------
-pairs.panels(m_param_samp)
+pairs.panels(m_param_samp, line.col = 'red')
 
 ### 06.04 Run the model and calculate goodness-of-fit for each sample  ---------
 
@@ -164,22 +165,30 @@ colnames(m_GOF) <- paste0(v_target_names, "_fit")
 for (j in 1:n_samp) {
   
   # Run model for a given parameter set
-  # model_res <- # ADD YOUR CODE HERE
+  model_res <- run_sick_sicker_markov(v_params = m_param_samp[j, ])
   
   # Calculate goodness-of-fit of model outputs to targets
   
   # TARGET 1: Survival ("Surv") - log likelihood
-  # m_GOF[j, 1] <- # ADD YOUR CODE HERE
+  m_GOF[j, 1] <- sum(dnorm(x = lst_targets$Surv$value,
+                           mean = model_res$Surv,
+                           sd = lst_targets$Surv$se,
+                           log = T))
   
   # TARGET 2: "Prev" - log likelihood
-  # m_GOF[j, 2] <- # ADD YOUR CODE HERE
+  m_GOF[j, 2] <- sum(dnorm(x = lst_targets$Prev$value,
+                           mean = model_res$Prev,
+                           sd = lst_targets$Prev$se,
+                           log = T))
   
   # TARGET 3: "PropSick" - log likelihood
-  # m_GOF[j, 3] <- # ADD YOUR CODE HERE
+  m_GOF[j, 3] <- sum(dnorm(x = lst_targets$PropSick$value,
+                           mean = model_res$PropSick,
+                           sd = lst_targets$PropSick$se,
+                           log = T))
   
   
 } # End loop over sampled parameter sets
-
 
 ### 06.05 Calculate overall GOF  -----------------------------------------------
 # can give different targets different weights
@@ -210,21 +219,72 @@ m_calib_res[1:10, ]
 # Note: When visualizing the top 100 (top 10%) input sets, use scatterplot3d() 
 # instead of plot().
 
-# ADD YOUR CODE HERE
+scatterplot3d(x=m_calib_res[1:100, 1], 
+              y= m_calib_res[1:100, 2], 
+              z=m_calib_res[1:100, 3], 
+              xlab = colnames(m_calib_res)[1], 
+              ylab = colnames(m_calib_res)[2], 
+              zlab = colnames(m_calib_res)[3], grid = TRUE)
 
 ### 07.03 Pairwise plots of top parameter sets  --------------------------------
-pairs.panels(m_calib_res[1:100, v_param_names])
+pairs.panels(m_calib_res[1:200, v_param_names], line.col = 'red')
 
 ### 07.04 Compare model predictions to targets  --------------------------------
 # Compute output from best and worst parameter set
-# v_out_best  <- # ADD YOUR CODE HERE
-# v_out_worst <- # ADD YOUR CODE HERE
+v_out_best  <- run_sick_sicker_markov(m_calib_res[1, ])
+v_out_worst <- run_sick_sicker_markov(m_calib_res[999, ])
 
-# Plot: TARGET 1: Survival ("Surv")
-# ADD YOUR CODE HERE
+# TARGET 1: Survival ("Surv")
+plotrix::plotCI(x = lst_targets$Surv$time, y = lst_targets$Surv$value, 
+                ui = lst_targets$Surv$ub,
+                li = lst_targets$Surv$lb,
+                ylim = c(0, 1), 
+                xlab = "Time", ylab = "Pr Survive")
+points(x = lst_targets$Surv$time, 
+       y = v_out_best$Surv, 
+       pch = 8, col = "red")
+points(x = lst_targets$Surv$time, 
+       y = v_out_worst$Surv, 
+       pch = 8, col = "blue")
+legend("topright", 
+       legend = c("Target", 
+                  "Model-predicted output best set", 
+                  "Model-predicted output worst set"),
+       col = c("black", "red", "blue"), pch = c(1, 8, 8))
 
 # Plot: TARGET 2: Prevalence ("Prev")
 # ADD YOUR CODE HERE
-
+plotrix::plotCI(x = lst_targets$Prev$time, y = lst_targets$Prev$value, 
+                ui = lst_targets$Prev$ub,
+                li = lst_targets$Prev$lb,
+                ylim = c(0, 1), 
+                xlab = "Time", ylab = "Pr Survive")
+points(x = lst_targets$Prev$time, 
+       y = v_out_best$Prev, 
+       pch = 8, col = "red")
+points(x = lst_targets$Prev$time, 
+       y = v_out_worst$Prev, 
+       pch = 8, col = "blue")
+legend("topright", 
+       legend = c("Target", 
+                  "Model-predicted output best set", 
+                  "Model-predicted output worst set"),
+       col = c("black", "red", "blue"), pch = c(1, 8, 8))
 # Plot: TARGET 3: PropSick
 # ADD YOUR CODE HERE
+plotrix::plotCI(x = lst_targets$PropSick$time, y = lst_targets$PropSick$value, 
+                ui = lst_targets$PropSick$ub,
+                li = lst_targets$PropSick$lb,
+                ylim = c(0, 1), 
+                xlab = "Time", ylab = "Pr Survive")
+points(x = lst_targets$PropSick$time, 
+       y = v_out_best$PropSick, 
+       pch = 8, col = "red")
+points(x = lst_targets$PropSick$time, 
+       y = v_out_worst$PropSick, 
+       pch = 8, col = "blue")
+legend("topright", 
+       legend = c("Target", 
+                  "Model-predicted output best set", 
+                  "Model-predicted output worst set"),
+       col = c("black", "red", "blue"), pch = c(1, 8, 8))
