@@ -309,7 +309,7 @@ legend("topright",
        pch = c(1, 8))
 
 ### 10.02 Pairwise plots with marginal histograms  -----------------------------
-pairs.panels(m_calib_res[, v_param_names])
+pairs.panels(m_calib_res[, v_param_names], line.col = 'red')
 
 ### 10.03 Calculate posterior summary statistics  ------------------------------
 # Posterior mean
@@ -355,7 +355,7 @@ legend("topright",
        col = c("black", "red", "blue"), 
        pch = c(1, 8))
 
-dev.off()
+# dev.off()
 
 ### 10.05 Advanced visualization: pairwise correlations  -----------------------
 gg_post_pairs_corr <- GGally::ggpairs(
